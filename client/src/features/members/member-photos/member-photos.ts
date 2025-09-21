@@ -24,7 +24,7 @@ export class MemberPhotos implements OnInit {
 
     ngOnInit(): void {
         const memberId = this.route.parent?.snapshot.paramMap.get('id');
-        if(memberId){
+        if (memberId) {
             this.memberService.getMemberPhotos(memberId).subscribe({
                 next: photos => this.photos.set(photos)
             })
@@ -38,6 +38,9 @@ export class MemberPhotos implements OnInit {
                 this.memberService.editMode.set(false);
                 this.loading.set(false);
                 this.photos.update(photos => [...photos, photo])
+                if (!this.memberService.member()?.imageUrl) {
+                    this.setMainLocalPhoto(photo);
+                }
             },
             error: error => {
                 console.log('Error uploading image: ', error);
@@ -49,17 +52,21 @@ export class MemberPhotos implements OnInit {
     setMainPhoto(photo: Photo) {
         this.memberService.setMainPhoto(photo).subscribe({
             next: () => {
-                const currentUser = this.accountService.currentUser();
-
-                if(currentUser) currentUser.imageUrl = photo.imageUrl;
-
-                this.accountService.setCurrentUser(currentUser as User);
-                this.memberService.member.update(member => ({
-                    ...member,
-                    imageUrl: photo.imageUrl
-                }) as Member)
+                this.setMainLocalPhoto(photo);
             }
         })
+    }
+
+    private setMainLocalPhoto(photo: Photo) {
+        const currentUser = this.accountService.currentUser()
+
+        if (currentUser) currentUser.imageUrl = photo.imageUrl
+
+        this.accountService.setCurrentUser(currentUser as User);
+        this.memberService.member.update(member => ({
+            ...member,
+            imageUrl: photo.imageUrl
+        }) as Member)
     }
 
     deletePhoto(photoId: number) {
